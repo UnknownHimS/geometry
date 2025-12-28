@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Shape Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .question-area {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .shape-canvas {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .question-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .shape-info {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dimensions {
+            font-size: 1.1em;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .answer-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .submit-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .next-btn {
+            background: #48bb78;
+            color: white;
+        }
+
+        .next-btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
+        .feedback {
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .correct {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .incorrect {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .formula {
+            background: #e6fffa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            color: #234e52;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔷 Geometry Quiz 🔷</h1>
+        <div class="score">
+            Score: <span id="score">0</span> | Streak: <span id="streak">0</span>
+        </div>
+
+        <div class="question-area">
+            <div class="question-text" id="question"></div>
+            <canvas id="shapeCanvas" class="shape-canvas" width="400" height="400"></canvas>
+            <div class="shape-info">
+                <div class="dimensions" id="dimensions"></div>
+            </div>
+        </div>
+
+        <input type="number" step="0.01" class="answer-input" id="answerInput" placeholder="Enter your answer">
+        
+        <div class="button-group">
+            <button class="submit-btn" id="submitBtn" onclick="checkAnswer()">Submit Answer</button>
+            <button class="next-btn hidden" id="nextBtn" onclick="nextQuestion()">Next Question</button>
+        </div>
+
+        <div id="feedback" class="feedback hidden"></div>
+        <div id="formula" class="formula hidden"></div>
+    </div>
+
+    <script>
+        const shapes2D = [
+            {
+                name: 'Circle',
+                questions: ['area', 'circumference', 'diameter'],
+                draw: (ctx, dims) => {
+                    ctx.beginPath();
+                    ctx.arc(200, 200, dims.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
+                    ctx.fill();
+                }
+            },
+            {
+                name: 'Rectangle',
+                questions: ['area', 'perimeter'],
+                draw: (ctx, dims) => {
+                    const x = 200 - dims.width / 2;
+                    const y = 200 - dims.height / 2;
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
+                    ctx.fillRect(x, y, dims.width, dims.height);
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, dims.width, dims.height);
+                }
+            },
+            {
+                name: 'Triangle',
+                questions: ['area', 'perimeter'],
+                draw: (ctx, dims) => {
+                    ctx.beginPath();
+                    ctx.moveTo(200, 100);
+                    ctx.lineTo(100, 300);
+                    ctx.lineTo(300, 300);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            },
+            {
+                name: 'Square',
+                questions: ['area', 'perimeter', 'diagonal'],
+                draw: (ctx, dims) => {
+                    const x = 200 - dims.side / 2;
+                    const y = 200 - dims.side / 2;
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
+                    ctx.fillRect(x, y, dims.side, dims.side);
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, dims.side, dims.side);
+                }
+            },
+            {
+                name: 'Trapezoid',
+                questions: ['area', 'perimeter'],
+                draw: (ctx, dims) => {
+                    ctx.beginPath();
+                    ctx.moveTo(150, 120);
+                    ctx.lineTo(250, 120);
+                    ctx.lineTo(280, 280);
+                    ctx.lineTo(120, 280);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            }
+        ];
+
+        const shapes3D = [
+            {
+                name: 'Sphere',
+                questions: ['volume', 'surface area'],
+                draw: (ctx, dims) => {
+                    const centerX = 200, centerY = 200;
+                    const r = dims.radius;
+                    
+                    // Draw sphere with shading
+                    for (let i = r; i > 0; i -= 5) {
+                        const alpha = (r - i) / r * 0.3;
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, i, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(102, 126, 234, ${0.2 + alpha})`;
+                        ctx.fill();
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            },
+            {
+                name: 'Cube',
+                questions: ['volume', 'surface area'],
+                draw: (ctx, dims) => {
+                    const s = dims.side;
+                    const offset = 40;
+                    
+                    // Front face
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+                    ctx.fillRect(150, 180, s, s);
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(150, 180, s, s);
+                    
+                    // Top face
+                    ctx.beginPath();
+                    ctx.moveTo(150, 180);
+                    ctx.lineTo(150 + offset, 180 - offset);
+                    ctx.lineTo(150 + s + offset, 180 - offset);
+                    ctx.lineTo(150 + s, 180);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.5)';
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Right face
+                    ctx.beginPath();
+                    ctx.moveTo(150 + s, 180);
+                    ctx.lineTo(150 + s + offset, 180 - offset);
+                    ctx.lineTo(150 + s + offset, 180 + s - offset);
+                    ctx.lineTo(150 + s, 180 + s);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.4)';
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            },
+            {
+                name: 'Cylinder',
+                questions: ['volume', 'surface area'],
+                draw: (ctx, dims) => {
+                    const r = dims.radius;
+                    const h = dims.height;
+                    const cx = 200;
+                    const cy = 150;
+                    
+                    // Bottom ellipse
+                    ctx.beginPath();
+                    ctx.ellipse(cx, cy + h, r, r * 0.3, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Side
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.4)';
+                    ctx.fillRect(cx - r, cy, r * 2, h);
+                    ctx.strokeRect(cx - r, cy, r * 2, h);
+                    
+                    // Top ellipse
+                    ctx.beginPath();
+                    ctx.ellipse(cx, cy, r, r * 0.3, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.5)';
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            },
+            {
+                name: 'Cone',
+                questions: ['volume', 'surface area'],
+                draw: (ctx, dims) => {
+                    const r = dims.radius;
+                    const h = dims.height;
+                    const cx = 200;
+                    const cy = 280;
+                    
+                    // Base
+                    ctx.beginPath();
+                    ctx.ellipse(cx, cy, r, r * 0.3, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Sides
+                    ctx.beginPath();
+                    ctx.moveTo(cx - r, cy);
+                    ctx.lineTo(cx, cy - h);
+                    ctx.lineTo(cx + r, cy);
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.4)';
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            },
+            {
+                name: 'Rectangular Prism',
+                questions: ['volume', 'surface area'],
+                draw: (ctx, dims) => {
+                    const w = dims.width;
+                    const h = dims.height;
+                    const d = dims.depth;
+                    const offset = 35;
+                    
+                    // Front face
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+                    ctx.fillRect(130, 200, w, h);
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(130, 200, w, h);
+                    
+                    // Top face
+                    ctx.beginPath();
+                    ctx.moveTo(130, 200);
+                    ctx.lineTo(130 + offset, 200 - offset);
+                    ctx.lineTo(130 + w + offset, 200 - offset);
+                    ctx.lineTo(130 + w, 200);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.5)';
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Right face
+                    ctx.beginPath();
+                    ctx.moveTo(130 + w, 200);
+                    ctx.lineTo(130 + w + offset, 200 - offset);
+                    ctx.lineTo(130 + w + offset, 200 + h - offset);
+                    ctx.lineTo(130 + w, 200 + h);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.4)';
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+        ];
+
+        let currentShape, currentQuestion, currentAnswer, score = 0, streak = 0;
+
+        function generateQuestion() {
+            const allShapes = [...shapes2D, ...shapes3D];
+            currentShape = allShapes[Math.floor(Math.random() * allShapes.length)];
+            currentQuestion = currentShape.questions[Math.floor(Math.random() * currentShape.questions.length)];
+            
+            let dims = {};
+            const canvas = document.getElementById('shapeCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Generate random dimensions
+            switch(currentShape.name) {
+                case 'Circle':
+                    dims.radius = Math.floor(Math.random() * 50) + 30;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    document.getElementById('dimensions').innerHTML = `Radius: ${dims.radius} units`;
+                    break;
+                case 'Rectangle':
+                    dims.width = Math.floor(Math.random() * 100) + 80;
+                    dims.height = Math.floor(Math.random() * 80) + 60;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    document.getElementById('dimensions').innerHTML = `Width: ${dims.width} units<br>Height: ${dims.height} units`;
+                    break;
+                case 'Triangle':
+                    dims.base = Math.floor(Math.random() * 80) + 60;
+                    dims.height = Math.floor(Math.random() * 80) + 60;
+                    dims.side1 = Math.floor(Math.random() * 70) + 50;
+                    dims.side2 = Math.floor(Math.random() * 70) + 50;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    if (currentQuestion === 'area') {
+                        document.getElementById('dimensions').innerHTML = `Base: ${dims.base} units<br>Height: ${dims.height} units`;
+                    } else {
+                        document.getElementById('dimensions').innerHTML = `Side 1: ${dims.side1} units<br>Side 2: ${dims.side2} units<br>Base: ${dims.base} units`;
+                    }
+                    break;
+                case 'Square':
+                    dims.side = Math.floor(Math.random() * 80) + 60;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    document.getElementById('dimensions').innerHTML = `Side: ${dims.side} units`;
+                    break;
+                case 'Trapezoid':
+                    dims.base1 = Math.floor(Math.random() * 60) + 40;
+                    dims.base2 = Math.floor(Math.random() * 60) + 60;
+                    dims.height = Math.floor(Math.random() * 70) + 50;
+                    dims.side1 = Math.floor(Math.random() * 50) + 40;
+                    dims.side2 = Math.floor(Math.random() * 50) + 40;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    if (currentQuestion === 'area') {
+                        document.getElementById('dimensions').innerHTML = `Base 1: ${dims.base1} units<br>Base 2: ${dims.base2} units<br>Height: ${dims.height} units`;
+                    } else {
+                        document.getElementById('dimensions').innerHTML = `Base 1: ${dims.base1} units<br>Base 2: ${dims.base2} units<br>Side 1: ${dims.side1} units<br>Side 2: ${dims.side2} units`;
+                    }
+                    break;
+                case 'Sphere':
+                    dims.radius = Math.floor(Math.random() * 50) + 40;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    document.getElementById('dimensions').innerHTML = `Radius: ${dims.radius} units`;
+                    break;
+                case 'Cube':
+                    dims.side = Math.floor(Math.random() * 60) + 50;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    document.getElementById('dimensions').innerHTML = `Side: ${dims.side} units`;
+                    break;
+                case 'Cylinder':
+                    dims.radius = Math.floor(Math.random() * 40) + 30;
+                    dims.height = Math.floor(Math.random() * 80) + 60;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    document.getElementById('dimensions').innerHTML = `Radius: ${dims.radius} units<br>Height: ${dims.height} units`;
+                    break;
+                case 'Cone':
+                    dims.radius = Math.floor(Math.random() * 50) + 40;
+                    dims.height = Math.floor(Math.random() * 90) + 70;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    document.getElementById('dimensions').innerHTML = `Radius: ${dims.radius} units<br>Height: ${dims.height} units`;
+                    break;
+                case 'Rectangular Prism':
+                    dims.width = Math.floor(Math.random() * 60) + 50;
+                    dims.height = Math.floor(Math.random() * 70) + 50;
+                    dims.depth = Math.floor(Math.random() * 50) + 40;
+                    currentAnswer = calculateAnswer(currentShape.name, currentQuestion, dims);
+                    document.getElementById('dimensions').innerHTML = `Width: ${dims.width} units<br>Height: ${dims.height} units<br>Depth: ${dims.depth} units`;
+                    break;
+            }
+            
+            currentShape.draw(ctx, dims);
+            
+            const questionType = currentQuestion.charAt(0).toUpperCase() + currentQuestion.slice(1);
+            document.getElementById('question').textContent = `Calculate the ${questionType} of this ${currentShape.name}`;
+        }
+
+        function calculateAnswer(shape, question, dims) {
+            const pi = Math.PI;
+            
+            switch(shape) {
+                case 'Circle':
+                    if (question === 'area') return pi * dims.radius ** 2;
+                    if (question === 'circumference') return 2 * pi * dims.radius;
+                    if (question === 'diameter') return 2 * dims.radius;
+                    break;
+                case 'Rectangle':
+                    if (question === 'area') return dims.width * dims.height;
+                    if (question === 'perimeter') return 2 * (dims.width + dims.height);
+                    break;
+                case 'Triangle':
+                    if (question === 'area') return 0.5 * dims.base * dims.height;
+                    if (question === 'perimeter') return dims.base + dims.side1 + dims.side2;
+                    break;
+                case 'Square':
+                    if (question === 'area') return dims.side ** 2;
+                    if (question === 'perimeter') return 4 * dims.side;
+                    if (question === 'diagonal') return dims.side * Math.sqrt(2);
+                    break;
+                case 'Trapezoid':
+                    if (question === 'area') return 0.5 * (dims.base1 + dims.base2) * dims.height;
+                    if (question === 'perimeter') return dims.base1 + dims.base2 + dims.side1 + dims.side2;
+                    break;
+                case 'Sphere':
+                    if (question === 'volume') return (4/3) * pi * dims.radius ** 3;
+                    if (question === 'surface area') return 4 * pi * dims.radius ** 2;
+                    break;
+                case 'Cube':
+                    if (question === 'volume') return dims.side ** 3;
+                    if (question === 'surface area') return 6 * dims.side ** 2;
+                    break;
+                case 'Cylinder':
+                    if (question === 'volume') return pi * dims.radius ** 2 * dims.height;
+                    if (question === 'surface area') return 2 * pi * dims.radius * (dims.radius + dims.height);
+                    break;
+                case 'Cone':
+                    if (question === 'volume') return (1/3) * pi * dims.radius ** 2 * dims.height;
+                    if (question === 'surface area') {
+                        const slant = Math.sqrt(dims.radius ** 2 + dims.height ** 2);
+                        return pi * dims.radius * (dims.radius + slant);
+                    }
+                    break;
+                case 'Rectangular Prism':
+                    if (question === 'volume') return dims.width * dims.height * dims.depth;
+                    if (question === 'surface area') return 2 * (dims.width * dims.height + dims.height * dims.depth + dims.width * dims.depth);
+                    break;
+            }
+        }
+
+        function getFormula(shape, question) {
+            const formulas = {
+                'Circle': {
+                    'area': 'Area = πr²',
+                    'circumference': 'Circumference = 2πr',
+                    'diameter': 'Diameter = 2r'
+                },
+                'Rectangle': {
+                    'area': 'Area = width × height',
+                    'perimeter': 'Perimeter = 2(width + height)'
+                },
+                'Triangle': {
+                    'area': 'Area = ½ × base × height',
+                    'perimeter': 'Perimeter = side1 + side2 + base'
+                },
+                'Square': {
+                    'area': 'Area = side²',
+                    'perimeter': 'Perimeter = 4 × side',
+                    'diagonal': 'Diagonal = side × √2'
+                },
+                'Trapezoid': {
+                    'area': 'Area = ½(base1 + base2) × height',
+                    'perimeter': 'Perimeter = base1 + base2 + side1 + side2'
+                },
+                'Sphere': {
+                    'volume': 'Volume = (4/3)πr³',
+                    'surface area': 'Surface Area = 4πr²'
+                },
+                'Cube': {
+                    'volume': 'Volume = side³',
+                    'surface area': 'Surface Area = 6 × side²'
+                },
+                'Cylinder': {
+                    'volume': 'Volume = πr²h',
+                    'surface area': 'Surface Area = 2πr(r + h)'
+                },
+                'Cone': {
+                    'volume': 'Volume = (1/3)πr²h',
+                    'surface area': 'Surface Area = πr(r + l) where l = √(r² + h²)'
+                },
+                'Rectangular Prism': {
+                    'volume': 'Volume = width × height × depth',
+                    'surface area': 'Surface Area = 2(wh + hd + wd)'
+                }
+            };
+            
+            return formulas[shape][question];
+        }
+
+        function checkAnswer() {
+            const userAnswer = parseFloat(document.getElementById('answerInput').value);
+            const tolerance = Math.abs(currentAnswer * 0.01);
+            const isCorrect = Math.abs(userAnswer - currentAnswer) <= tolerance;
+            
+            const feedback = document.getElementById('feedback');
+            const formula = document.getElementById('formula');
+            
+            feedback.classList.remove('hidden');
+            formula.classList.remove('hidden');
+            
+            if (isCorrect) {
+                feedback.className = 'feedback correct';
+                feedback.textContent = `✓ Correct! The answer is ${currentAnswer.toFixed(2)}`;
+                score++;
+                streak++;
+            } else {
+                feedback.className = 'feedback incorrect';
+                feedback.textContent = `✗ Incorrect. The correct answer is ${currentAnswer.toFixed(2)}`;
+                streak = 0;
+            }
+            
+            formula.textContent = `Formula: ${getFormula(currentShape.name, currentQuestion)}`;
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('submitBtn').classList.add('hidden');
+            document.getElementById('nextBtn').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('formula').classList.add('hidden');
+            document.getElementById('submitBtn').classList.remove('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+            generateQuestion();
+        }
+
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !document.getElementById('submitBtn').classList.contains('hidden')) {
+                checkAnswer();
+            }
+        });
+
+        generateQuestion();
+    </script>
+</body>
+</html>
